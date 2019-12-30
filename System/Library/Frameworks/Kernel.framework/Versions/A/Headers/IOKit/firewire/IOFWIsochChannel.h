@@ -73,6 +73,8 @@ protected:
     IOFWCompareAndSwapCommand *		fLockCmd;
     UInt32							fGeneration;	// When bandwidth was allocated
     
+	IOLock *		fLock;
+	
 /*! @struct ExpansionData
     @discussion This structure will be used to expand the capablilties of the class in the future.
     */    
@@ -82,10 +84,10 @@ protected:
     Reserved for future use.  (Internal use only)  */
     ExpansionData *reserved;
 
-    static void					threadFunc( void * arg, void * );
+    static void					threadFunc( void * arg );
     
     virtual IOReturn			updateBandwidth(bool claim);
-    virtual void				reallocBandwidth();	
+    virtual void				reallocBandwidth( UInt32 generation );	
     virtual void				free();
 
 public:
@@ -107,7 +109,7 @@ public:
 protected:
 	// handles IRM and channel determination and allocation.
 	// called by both user and kernel isoch channels
-	IOReturn					allocateChannelBegin( IOFWSpeed speed, UInt64 allowedChans, UInt32& channel ) ;
+	IOReturn					allocateChannelBegin( IOFWSpeed speed, UInt64 allowedChans, UInt32 * channel = NULL ) ;
 
 	// handles IRM and channel allocation.
 	// called by both user and kernel isoch channels

@@ -3,21 +3,20 @@
  *
  * @APPLE_LICENSE_HEADER_START@
  * 
- * Portions Copyright (c) 1999 Apple Computer, Inc.  All Rights
- * Reserved.  This file contains Original Code and/or Modifications of
- * Original Code as defined in and that are subject to the Apple Public
- * Source License Version 1.1 (the "License").  You may not use this file
- * except in compliance with the License.  Please obtain a copy of the
- * License at http://www.apple.com/publicsource and read it before using
- * this file.
+ * This file contains Original Code and/or Modifications of Original Code
+ * as defined in and that are subject to the Apple Public Source License
+ * Version 2.0 (the 'License'). You may not use this file except in
+ * compliance with the License. Please obtain a copy of the License at
+ * http://www.opensource.apple.com/apsl/ and read it before using this
+ * file.
  * 
  * The Original Code and all software distributed under the License are
- * distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, EITHER
+ * distributed on an 'AS IS' basis, WITHOUT WARRANTY OF ANY KIND, EITHER
  * EXPRESS OR IMPLIED, AND APPLE HEREBY DISCLAIMS ALL SUCH WARRANTIES,
  * INCLUDING WITHOUT LIMITATION, ANY WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE OR NON- INFRINGEMENT.  Please see the
- * License for the specific language governing rights and limitations
- * under the License.
+ * FITNESS FOR A PARTICULAR PURPOSE, QUIET ENJOYMENT OR NON-INFRINGEMENT.
+ * Please see the License for the specific language governing rights and
+ * limitations under the License.
  * 
  * @APPLE_LICENSE_HEADER_END@
  */
@@ -52,6 +51,7 @@
 
 #ifndef _MACHO_RELOC_H_
 #define _MACHO_RELOC_H_
+#include <stdint.h>
 
 /*
  * Format of a relocation entry of a Mach-O file.  Modified from the 4.3BSD
@@ -62,12 +62,12 @@
  * Also the last 4 bits have had the r_type tag added to them.
  */
 struct relocation_info {
-   long		r_address;	/* offset in the section to what is being
+   int32_t	r_address;	/* offset in the section to what is being
 				   relocated */
-   unsigned int r_symbolnum:24,	/* symbol index if r_extern == 1 or section
+   uint32_t     r_symbolnum:24,	/* symbol index if r_extern == 1 or section
 				   ordinal if r_extern == 0 */
 		r_pcrel:1, 	/* was relocated pc relative already */
-		r_length:2,	/* 0=byte, 1=word, 2=long */
+		r_length:2,	/* 0=byte, 1=word, 2=long, 3=quad */
 		r_extern:1,	/* does not include value of sym referenced */
 		r_type:4;	/* if not 0, machine specific relocation type */
 };
@@ -150,31 +150,31 @@ struct relocation_info {
 				   stucture */
 struct scattered_relocation_info {
 #ifdef __BIG_ENDIAN__
-   unsigned int r_scattered:1,	/* 1=scattered, 0=non-scattered (see above) */
+   uint32_t	r_scattered:1,	/* 1=scattered, 0=non-scattered (see above) */
 		r_pcrel:1, 	/* was relocated pc relative already */
-		r_length:2,	/* 0=byte, 1=word, 2=long */
+		r_length:2,	/* 0=byte, 1=word, 2=long, 3=quad */
 		r_type:4,	/* if not 0, machine specific relocation type */
    		r_address:24;	/* offset in the section to what is being
 				   relocated */
-   long		r_value;	/* the value the item to be relocated is
+   int32_t	r_value;	/* the value the item to be relocated is
 				   refering to (without any offset added) */
 #endif /* __BIG_ENDIAN__ */
 #ifdef __LITTLE_ENDIAN__
-   unsigned int
+   uint32_t
    		r_address:24,	/* offset in the section to what is being
 				   relocated */
 		r_type:4,	/* if not 0, machine specific relocation type */
-		r_length:2,	/* 0=byte, 1=word, 2=long */
+		r_length:2,	/* 0=byte, 1=word, 2=long, 3=quad */
 		r_pcrel:1, 	/* was relocated pc relative already */
 		r_scattered:1;	/* 1=scattered, 0=non-scattered (see above) */
-   long		r_value;	/* the value the item to be relocated is
+   int32_t	r_value;	/* the value the item to be relocated is
 				   refering to (without any offset added) */
 #endif /* __LITTLE_ENDIAN__ */
 };
 
 /*
  * Relocation types used in a generic implementation.  Relocation entries for
- * nornal things use the generic relocation as discribed above and their r_type
+ * normal things use the generic relocation as discribed above and their r_type
  * is GENERIC_RELOC_VANILLA (a value of zero).
  *
  * Another type of generic relocation, GENERIC_RELOC_SECTDIFF, is to support
@@ -195,7 +195,8 @@ enum reloc_type_generic
     GENERIC_RELOC_VANILLA,	/* generic relocation as discribed above */
     GENERIC_RELOC_PAIR,		/* Only follows a GENRIC_RELOC_SECTDIFF */
     GENERIC_RELOC_SECTDIFF,
-    GENERIC_RELOC_PB_LA_PTR	/* prebound lazy pointer */
+    GENERIC_RELOC_PB_LA_PTR,	/* prebound lazy pointer */
+    GENERIC_RELOC_LOCAL_SECTDIFF
 };
 
 #endif /* _MACHO_RELOC_H_ */

@@ -197,7 +197,7 @@ extern struct seminfo	seminfo;
 extern struct semid_ds *sema;	/* semaphore id pool */
 extern struct sem *sem;		/* semaphore pool */
 /* This is now a struct sem_undo with the new memory allocation 
- * extern int	*semu;		/* undo structure pool
+ * extern int	*semu;
  */
 extern struct sem_undo	*semu;		/* undo structure pool */
 
@@ -239,7 +239,7 @@ typedef enum {
 
 __BEGIN_DECLS
 int semsys __P((int, ...));
-int semctl __P((int, int, int, union semun));
+int semctl __P((int, int, int, ...));
 int semget __P((key_t, int, int));
 int semop __P((int, struct sembuf *,unsigned));
 __END_DECLS

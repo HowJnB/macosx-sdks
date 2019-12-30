@@ -3,19 +3,20 @@
  *
  * @APPLE_LICENSE_HEADER_START@
  * 
- * The contents of this file constitute Original Code as defined in and
- * are subject to the Apple Public Source License Version 1.1 (the
- * "License").  You may not use this file except in compliance with the
- * License.  Please obtain a copy of the License at
- * http://www.apple.com/publicsource and read it before using this file.
+ * This file contains Original Code and/or Modifications of Original Code
+ * as defined in and that are subject to the Apple Public Source License
+ * Version 2.0 (the 'License'). You may not use this file except in
+ * compliance with the License. Please obtain a copy of the License at
+ * http://www.opensource.apple.com/apsl/ and read it before using this
+ * file.
  * 
- * This Original Code and all software distributed under the License are
- * distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, EITHER
+ * The Original Code and all software distributed under the License are
+ * distributed on an 'AS IS' basis, WITHOUT WARRANTY OF ANY KIND, EITHER
  * EXPRESS OR IMPLIED, AND APPLE HEREBY DISCLAIMS ALL SUCH WARRANTIES,
  * INCLUDING WITHOUT LIMITATION, ANY WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE OR NON-INFRINGEMENT.  Please see the
- * License for the specific language governing rights and limitations
- * under the License.
+ * FITNESS FOR A PARTICULAR PURPOSE, QUIET ENJOYMENT OR NON-INFRINGEMENT.
+ * Please see the License for the specific language governing rights and
+ * limitations under the License.
  * 
  * @APPLE_LICENSE_HEADER_END@
  */
@@ -23,73 +24,371 @@
 #ifndef _IOKIT_IO_STORAGE_DEVICE_CHARACTERISTICS_H_
 #define _IOKIT_IO_STORAGE_DEVICE_CHARACTERISTICS_H_
 
-
-//
-//	Protocol Characteristics - Characteristics defined for protocols.
-//
-
-// This key is used to define Protocol Characteristics for a particular protocol (e.g. FireWire, USB)
-// and it has an associated dictionary which lists the protocol characteristics.
-#define	kIOPropertyProtocolCharacteristicsKey		"Protocol Characteristics"
-
-// An identifier that will uniquely identify this SCSI Domain for the Physical Interconnect type.
-// This identifier is only guaranteed to be unique for any given Physical Interconnect and is
-// not guaranteed to be the same across restarts or shutdowns.
-#define kIOPropertySCSIDomainIdentifierKey			"SCSI Domain Identifier"
-
-// This is the SCSI Target Identifier for a given SCSI Target Device
-#define kIOPropertySCSITargetIdentifierKey			"SCSI Target Identifier"
-
-// This key is the SCSI Logical Unit Number for the device server controlled
-// by the driver
-#define kIOPropertySCSILogicalUnitNumberKey			"SCSI Logical Unit Number"
-
-// This key is used to define the Physical Interconnect to which a device is
-// attached (e.g. ATAPI, FireWire).
-#define kIOPropertyPhysicalInterconnectTypeKey		"Physical Interconnect"
-
-// This key is used to define the Physical Interconnect Location (e.g. Internal).
-#define kIOPropertyPhysicalInterconnectLocationKey	"Physical Interconnect Location"
-
-// This key defines the location of Internal. If the device is connected to an internal
-// bus, this key should be set.
-#define kIOPropertyInternalKey						"Internal"
-
-// This key defines the location of External. If the device is connected to an external
-// bus, this key should be set.
-#define kIOPropertyExternalKey						"External"
-
-// This key defines the location of Internal/External. If the device is connected to
-// a bus and it is indeterminate whether it it internal or external, this key should be set.
-#define kIOPropertyInternalExternalKey				"Internal/External"
-
-// This protocol characteristics key is used to inform the system that the protocol
-// supports having multiple devices that act as initiators.
-#define kIOPropertySCSIProtocolMultiInitKey		"Multiple Initiators"
-
+#include <IOKit/storage/IOStorageProtocolCharacteristics.h>
 
 //
 //	Device Characteristics - Characteristics defined for devices.
 //
 
-// This key is used to define Device Characteristics for a particular device (e.g. CD-ROM drive)
-// and it has an associated dictionary which lists the device characteristics. The device
-// characteristics are Command Set specific and are listed in the header files for each command
-// set.
-#define kIOPropertyDeviceCharacteristicsKey			"Device Characteristics"
+/*!
+@defined kIOPropertyDeviceCharacteristicsKey
+@discussion This key is used to define Device Characteristics for a particular
+device and it has an associated dictionary which lists the
+device characteristics. The device characteristics are Command Set specific
+and are listed in the header files for each command set.
+
+Requirement: Mandatory
+
+Example:
+<pre>
+@textblock
+<dict>
+	<key>Device Characteristics</key>
+	<dict>
+		<key>Vendor Name</key>
+		<string>Apple</string>
+		<key>Product Name</key>
+		<string>iPod</string>
+		<key>Product Revision Level</key>
+		<string>1.0</string>
+	</dict>
+</dict>
+@/textblock
+</pre>
+*/
+#define kIOPropertyDeviceCharacteristicsKey		"Device Characteristics"
 
 
-// This key is used to define the Vendor Name for a particular device (e.g. Apple)
-// and it has an associated string.
-#define kIOPropertyVendorNameKey					"Vendor Name"
+/*!
+@defined kIOPropertyVendorNameKey
+@discussion This key is used to define the Vendor Name for a particular device
+and it has an associated string.
 
-// This key is used to define the Product Name for a particular device (e.g. CD-600)
-// and it has an associated string.
-#define kIOPropertyProductNameKey					"Product Name"
+Requirement: Mandatory
 
-// This key is used to define the Product Revision Level for a particular device
-// (e.g. 1.0a) and it has an associated string.
-#define kIOPropertyProductRevisionLevelKey			"Product Revision Level"
+Example:
+<pre>
+@textblock
+<dict>
+	<key>Device Characteristics</key>
+	<dict>
+		<key>Vendor Name</key>
+		<string>Apple</string>
+		<key>Product Name</key>
+		<string>iPod</string>
+		<key>Product Revision Level</key>
+		<string>1.0</string>
+	</dict>
+</dict>
+@/textblock
+</pre>
+*/
+#define kIOPropertyVendorNameKey				"Vendor Name"
+
+
+/*!
+@defined kIOPropertyProductNameKey
+@discussion This key is used to define the Product Name for a particular device
+and it has an associated string.
+
+Requirement: Mandatory
+
+Example:
+<pre>
+@textblock
+<dict>
+	<key>Device Characteristics</key>
+	<dict>
+		<key>Vendor Name</key>
+		<string>Apple</string>
+		<key>Product Name</key>
+		<string>iPod</string>
+		<key>Product Revision Level</key>
+		<string>1.0</string>
+	</dict>
+</dict>
+@/textblock
+</pre>
+*/
+#define kIOPropertyProductNameKey				"Product Name"
+
+
+/*!
+@defined kIOPropertyProductRevisionLevelKey
+@discussion This key is used to define the Product Revision Level for a
+particular device and it has an associated string.
+
+Requirement: Mandatory
+
+Example:
+<pre>
+@textblock
+<dict>
+	<key>Device Characteristics</key>
+	<dict>
+		<key>Vendor Name</key>
+		<string>Apple</string>
+		<key>Product Name</key>
+		<string>iPod</string>
+		<key>Product Revision Level</key>
+		<string>1.0</string>
+	</dict>
+</dict>
+@/textblock
+</pre>
+*/
+#define kIOPropertyProductRevisionLevelKey		"Product Revision Level"
+
+
+/*!
+@defined kIOPropertySupportedCDFeaturesKey
+@discussion This key is used to define the supported CD Features for a
+particular optical device and it has an associated bitfield. See
+<IOKit/scsi/IOSCSIMultimediaCommandsDevice.h> for definitions of the
+bits and associated bitmasks.
+
+Requirement: Mandatory for optical devices (Peripheral Device Type 05h).
+
+Example:
+<pre>
+@textblock
+<dict>
+	<key>Device Characteristics</key>
+	<dict>
+		<key>Vendor Name</key>
+		<string>Apple</string>
+		<key>Product Name</key>
+		<string>SuperDrive</string>
+		<key>Product Revision Level</key>
+		<string>1.0</string>
+		<key>CD Features</key>
+		<integer>1663</integer>
+		<key>DVD Features</key>
+		<integer>103</integer>
+	</dict>
+</dict>
+@/textblock
+</pre>
+*/
+#define kIOPropertySupportedCDFeaturesKey		"CD Features"
+
+
+/*!
+@defined kIOPropertySupportedDVDFeaturesKey
+@discussion This key is used to define the supported DVD Features for a
+particular optical device and it has an associated bitfield. See
+<IOKit/scsi/IOSCSIMultimediaCommandsDevice.h> for definitions of the
+bits and associated bitmasks.
+
+Requirement: Mandatory for optical devices (Peripheral Device Type 05h).
+
+Example:
+<pre>
+@textblock
+<dict>
+	<key>Device Characteristics</key>
+	<dict>
+		<key>Vendor Name</key>
+		<string>Apple</string>
+		<key>Product Name</key>
+		<string>SuperDrive</string>
+		<key>Product Revision Level</key>
+		<string>1.0</string>
+		<key>CD Features</key>
+		<integer>1663</integer>
+		<key>DVD Features</key>
+		<integer>103</integer>
+	</dict>
+</dict>
+@/textblock
+</pre>
+*/
+#define kIOPropertySupportedDVDFeaturesKey		"DVD Features"
+
+
+/*!
+@defined kIOPropertyRigidDiskGeometryKey
+@discussion This key is used to define a dictionary containing
+rigid disk geometry information.
+
+Requirement: Optional. If a device publishes this dictionary, it
+must publish all key/value pairs which are deemed Mandatory.
+
+Example:
+<pre>
+@textblock
+<dict>
+	<key>Device Characteristics</key>
+	<dict>
+		<key>Vendor Name</key>
+		<string>Apple</string>
+		<key>Product Name</key>
+		<string>iPod</string>
+		<key>Product Revision Level</key>
+		<string>1.0</string>
+		<key>Rigid Disk Geometry</key>
+		<dict>
+			<key>Sector Count per Track</key>
+			<integer>12345</integer>
+			<key>Head Count</key>
+			<integer>12</integer>
+			<key>Cylinder Count</key>
+			<integer>12345</integer>
+			<key>Bytes per Physical Sector</key>
+			<integer>512</integer>
+		</dict>
+	</dict>
+</dict>
+@/textblock
+</pre>
+*/
+#define kIOPropertyRigidDiskGeometryKey			"Rigid Disk Geometry"
+
+
+/*!
+@defined kIOPropertySectorCountPerTrackKey
+@discussion This key is used to define the number of sectors per
+each track for a particular medium.
+
+Requirement: Mandatory element of the Rigid Disk Geometry dictionary.
+
+Example:
+<pre>
+@textblock
+<dict>
+	<key>Device Characteristics</key>
+	<dict>
+		<key>Vendor Name</key>
+		<string>Apple</string>
+		<key>Product Name</key>
+		<string>iPod</string>
+		<key>Product Revision Level</key>
+		<string>1.0</string>
+		<key>Rigid Disk Geometry</key>
+		<dict>
+			<key>Sector Count per Track</key>
+			<integer>12345</integer>
+		</dict>
+	</dict>
+</dict>
+@/textblock
+</pre>
+*/
+#define kIOPropertySectorCountPerTrackKey		"Sector Count per Track"
+
+
+/*!
+@defined kIOPropertyHeadCountKey
+@discussion This key is used to define the number of heads for
+a particular medium.
+
+Requirement: Mandatory element of the Rigid Disk Geometry dictionary.
+
+Example:
+<pre>
+@textblock
+<dict>
+	<key>Device Characteristics</key>
+	<dict>
+		<key>Vendor Name</key>
+		<string>Apple</string>
+		<key>Product Name</key>
+		<string>iPod</string>
+		<key>Product Revision Level</key>
+		<string>1.0</string>
+		<key>Rigid Disk Geometry</key>
+		<dict>
+			<key>Sector Count per Track</key>
+			<integer>12345</integer>
+			<key>Head Count</key>
+			<integer>12</integer>
+			<key>Cylinder Count</key>
+			<integer>12345</integer>
+			<key>Bytes per Physical Sector</key>
+			<integer>512</integer>
+		</dict>
+	</dict>
+</dict>
+@/textblock
+</pre>
+*/
+#define kIOPropertyHeadCountKey					"Head Count"
+
+
+/*!
+@defined kIOPropertyCylinderCountKey
+@discussion This key is used to define the number of heads for
+a particular medium.
+
+Requirement: Mandatory element of the Rigid Disk Geometry dictionary.
+
+Example:
+<pre>
+@textblock
+<dict>
+	<key>Device Characteristics</key>
+	<dict>
+		<key>Vendor Name</key>
+		<string>Apple</string>
+		<key>Product Name</key>
+		<string>iPod</string>
+		<key>Product Revision Level</key>
+		<string>1.0</string>
+		<key>Rigid Disk Geometry</key>
+		<dict>
+			<key>Sector Count per Track</key>
+			<integer>12345</integer>
+			<key>Head Count</key>
+			<integer>12</integer>
+			<key>Cylinder Count</key>
+			<integer>12345</integer>
+			<key>Bytes per Physical Sector</key>
+			<integer>512</integer>
+		</dict>
+	</dict>
+</dict>
+@/textblock
+</pre>
+*/
+#define kIOPropertyCylinderCountKey				"Cylinder Count"
+
+
+/*!
+@defined kIOPropertyBytesPerPhysicalSectorKey
+@discussion This key is used to define the number of heads for
+a particular medium.
+
+Requirement: Mandatory element of the Rigid Disk Geometry dictionary.
+
+Example:
+<pre>
+@textblock
+<dict>
+	<key>Device Characteristics</key>
+	<dict>
+		<key>Vendor Name</key>
+		<string>Apple</string>
+		<key>Product Name</key>
+		<string>iPod</string>
+		<key>Product Revision Level</key>
+		<string>1.0</string>
+		<key>Rigid Disk Geometry</key>
+		<dict>
+			<key>Sector Count per Track</key>
+			<integer>12345</integer>
+			<key>Head Count</key>
+			<integer>12</integer>
+			<key>Cylinder Count</key>
+			<integer>12345</integer>
+			<key>Bytes per Physical Sector</key>
+			<integer>512</integer>
+		</dict>
+	</dict>
+</dict>
+@/textblock
+</pre>
+*/
+#define kIOPropertyBytesPerPhysicalSectorKey	"Bytes per Physical Sector"
 
 
 #endif	/* _IOKIT_IO_STORAGE_DEVICE_CHARACTERISTICS_H_ */

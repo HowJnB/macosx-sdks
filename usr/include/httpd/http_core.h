@@ -1,59 +1,16 @@
-/* ====================================================================
- * The Apache Software License, Version 1.1
+/* Copyright 1999-2004 The Apache Software Foundation
  *
- * Copyright (c) 2000-2002 The Apache Software Foundation.  All rights
- * reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- *
- * 3. The end-user documentation included with the redistribution,
- *    if any, must include the following acknowledgment:
- *       "This product includes software developed by the
- *        Apache Software Foundation (http://www.apache.org/)."
- *    Alternately, this acknowledgment may appear in the software itself,
- *    if and wherever such third-party acknowledgments normally appear.
- *
- * 4. The names "Apache" and "Apache Software Foundation" must
- *    not be used to endorse or promote products derived from this
- *    software without prior written permission. For written
- *    permission, please contact apache@apache.org.
- *
- * 5. Products derived from this software may not be called "Apache",
- *    nor may "Apache" appear in their name, without prior written
- *    permission of the Apache Software Foundation.
- *
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESSED OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED.  IN NO EVENT SHALL THE APACHE SOFTWARE FOUNDATION OR
- * ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- * USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
- * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- * ====================================================================
- *
- * This software consists of voluntary contributions made by many
- * individuals on behalf of the Apache Software Foundation.  For more
- * information on the Apache Software Foundation, please see
- * <http://www.apache.org/>.
- *
- * Portions of this software are based upon public domain software
- * originally written at the National Center for Supercomputing Applications,
- * University of Illinois, Urbana-Champaign.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #ifndef APACHE_HTTP_CORE_H
@@ -115,6 +72,12 @@ extern "C" {
 #define SATISFY_ANY 1
 #define SATISFY_NOSPEC 2
 
+/* default maximum of internal redirects */
+# define AP_DEFAULT_MAX_INTERNAL_REDIRECTS 20
+
+/* default maximum subrequest nesting level */
+# define AP_DEFAULT_MAX_SUBREQ_DEPTH 20
+
 API_EXPORT(int) ap_allow_options (request_rec *);
 API_EXPORT(int) ap_allow_overrides (request_rec *);
 API_EXPORT(const char *) ap_default_type (request_rec *);     
@@ -136,6 +99,12 @@ API_EXPORT(unsigned long) ap_get_limit_req_body(const request_rec *r);
 API_EXPORT(void) ap_custom_response(request_rec *r, int status, char *string);
 API_EXPORT(int) ap_exists_config_define(char *name);
 
+/* Check if the current request is beyond the configured max. number of redirects or subrequests
+ * @param r The current request
+ * @return true (is exceeded) or false
+ */
+API_EXPORT(int) ap_is_recursion_limit_exceeded(const request_rec *r);
+
 /* Authentication stuff.  This is one of the places where compatibility
  * with the old config files *really* hurts; they don't discriminate at
  * all between different authentication schemes, meaning that we need
@@ -150,6 +119,7 @@ typedef struct {
      
 API_EXPORT(const char *) ap_auth_type (request_rec *);
 API_EXPORT(const char *) ap_auth_name (request_rec *);     
+API_EXPORT(const char *) ap_auth_nonce (request_rec *);
 API_EXPORT(int) ap_satisfies (request_rec *r);
 API_EXPORT(const array_header *) ap_requires (request_rec *);    
 
@@ -240,7 +210,9 @@ typedef struct {
      * This lets us do quick merges in merge_core_dir_configs().
      */
   
-    char **response_code_strings;
+    char **response_code_strings; /* from ErrorDocument, not from
+                                   * ap_custom_response()
+                                   */
 
     /* Hostname resolution etc */
 #define HOSTNAME_LOOKUP_OFF	0
@@ -343,6 +315,9 @@ typedef struct {
      */
     ap_flag_e cgi_command_args;
 
+    /* Digest auth. */
+    char *ap_auth_nonce;
+
 } core_dir_config;
 
 /* Per-server core configuration */
@@ -364,6 +339,11 @@ typedef struct {
     char *access_name;
     array_header *sec;
     array_header *sec_url;
+
+    /* recursion backstopper */
+    int recursion_limit_set; /* boolean */
+    int redirect_limit;      /* maximum number of internal redirects */
+    int subreq_limit;        /* maximum nesting level of subrequests */
 } core_server_config;
 
 /* for http_config.c */

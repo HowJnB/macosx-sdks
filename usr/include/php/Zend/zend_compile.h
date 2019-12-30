@@ -2,12 +2,12 @@
    +----------------------------------------------------------------------+
    | Zend Engine                                                          |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1998-2001 Zend Technologies Ltd. (http://www.zend.com) |
+   | Copyright (c) 1998-2003 Zend Technologies Ltd. (http://www.zend.com) |
    +----------------------------------------------------------------------+
-   | This source file is subject to version 0.92 of the Zend license,     |
+   | This source file is subject to version 2.00 of the Zend license,     |
    | that is bundled with this package in the file LICENSE, and is        | 
    | available at through the world-wide-web at                           |
-   | http://www.zend.com/license/0_92.txt.                                |
+   | http://www.zend.com/license/2_00.txt.                                |
    | If you did not receive a copy of the Zend license and are unable to  |
    | obtain it through the world-wide-web, please send a note to          |
    | license@zend.com so we can mail you a copy immediately.              |
@@ -32,7 +32,7 @@
 #define DEBUG_ZEND 0
 
 #define FREE_PNODE(znode)	zval_dtor(&znode->u.constant);
-#define FREE_OP(op, should_free) if (should_free) zval_dtor(&Ts[(op)->u.var].tmp_var);
+#define FREE_OP(Ts, op, should_free) if (should_free) zval_dtor(&Ts[(op)->u.var].tmp_var);
 
 #define SET_UNUSED(op)  (op).op_type = IS_UNUSED
 
@@ -175,7 +175,7 @@ typedef struct _zend_file_handle {
 	zend_bool free_filename;
 } zend_file_handle;
 
-
+#define ZEND_IS_VALID_FILE_HANDLE(hn)   ((((hn)->type == ZEND_HANDLE_FD || (hn)->type == ZEND_HANDLE_SOCKET_FD) && (hn)->handle.fd >= 0) || ((hn)->type == ZEND_HANDLE_FP && (hn)->handle.fp != NULL))
 
 #define IS_CONST	(1<<0)
 #define IS_TMP_VAR	(1<<1)
@@ -201,7 +201,7 @@ void zend_activate_modules(TSRMLS_D);
 void zend_deactivate_modules(TSRMLS_D);
 
 
-int lex_scan(zval *zendlval TSRMLS_DC);
+ZEND_API int lex_scan(zval *zendlval TSRMLS_DC);
 void startup_scanner(TSRMLS_D);
 void shutdown_scanner(TSRMLS_D);
 
@@ -326,12 +326,12 @@ void zend_do_unset(znode *variable TSRMLS_DC);
 void zend_do_isset_or_isempty(int type, znode *result, znode *variable TSRMLS_DC);
 
 void zend_do_foreach_begin(znode *foreach_token, znode *array, znode *open_brackets_token, znode *as_token, int variable TSRMLS_DC);
-void zend_do_foreach_cont(znode *value, znode *key, znode *as_token TSRMLS_DC);
+void zend_do_foreach_cont(znode *value, znode *key, znode *as_token, znode *foreach_token TSRMLS_DC);
 void zend_do_foreach_end(znode *foreach_token, znode *open_brackets_token TSRMLS_DC);
 
 void zend_do_declare_begin(TSRMLS_D);
 void zend_do_declare_stmt(znode *var, znode *val TSRMLS_DC);
-void zend_do_declare_end(TSRMLS_D);
+void zend_do_declare_end(znode *declare_token TSRMLS_DC);
 
 void zend_do_end_heredoc(TSRMLS_D);
 
@@ -568,6 +568,7 @@ int zendlex(znode *zendlval TSRMLS_DC);
 #define ZEND_HANDLE_FP				2
 #define ZEND_HANDLE_STDIOSTREAM		3
 #define ZEND_HANDLE_FSTREAM			4
+#define ZEND_HANDLE_SOCKET_FD		5
 
 #define ZEND_DECLARE_CLASS				1
 #define ZEND_DECLARE_FUNCTION			2
@@ -575,6 +576,9 @@ int zendlex(znode *zendlval TSRMLS_DC);
 
 #define ZEND_FETCH_STANDARD		0
 #define ZEND_FETCH_ADD_LOCK		1
+
+#define ZEND_FE_FETCH_BYREF	1
+#define ZEND_FE_FETCH_WITH_KEY	2
 
 #define ZEND_MEMBER_FUNC_CALL	1<<0
 #define ZEND_CTOR_CALL			1<<1

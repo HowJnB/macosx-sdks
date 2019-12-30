@@ -25,6 +25,7 @@
 #include <IOKit/IOService.h>
 #include <IOKit/pwr_mgt/IOPM.h>
 
+class IOPMPowerStateQueue;
 class RootDomainUserClient;
 
 #define kRootDomainSupportedFeatures "Supported Features"
@@ -35,6 +36,21 @@ enum {
     kFrameBufferDeepSleepSupported	= 0x00000002,
     kPCICantSleep			= 0x00000004
 };
+
+// Constants for use as arguments to registerPMSettingsController
+enum {
+    kIOPMAutoWakeSetting = 1,
+    kIOPMAutoPowerOnSetting,
+    kIOPMWakeOnRingSetting,
+    kIOPMAutoRestartOnPowerLossSetting,
+    kIOPMWakeOnLidSetting,
+    kIOPMWakeOnACChangeSetting
+};
+typedef int IOPMSystemSettingType;
+
+
+
+typedef IOReturn (*IOPMSettingControllerCallback)(IOPMSystemSettingType arg_type, int arg_val, void *info);
 
 extern "C"
 {
@@ -58,7 +74,6 @@ public:
 
     static IOPMrootDomain * construct( void );
     virtual bool start( IOService * provider );
-    virtual IOReturn newUserClient ( task_t,  void *, UInt32, IOUserClient ** );
     virtual IOReturn setAggressiveness ( unsigned long, unsigned long );
     virtual IOReturn youAreRoot ( void );
     virtual IOReturn sleepSystem ( void );
@@ -74,10 +89,15 @@ public:
     void wakeFromDoze( void );
     void broadcast_it (unsigned long, unsigned long );
     void publishFeature( const char *feature );
-
+    void unIdleDevice( IOService *, unsigned long );
+    void announcePowerSourceChange( void );
+        
     // Override of these methods for logging purposes.
     virtual IOReturn changePowerStateTo ( unsigned long ordinal );
     virtual IOReturn changePowerStateToPriv ( unsigned long ordinal );
+
+    IOReturn registerPMSettingController(IOPMSettingControllerCallback, void *);
+    IOReturn registerPlatformPowerProfiles(OSArray *);
 
 private:
 
@@ -106,11 +126,14 @@ private:
     static bool displayWranglerPublished( void * target, void * refCon,
                                     IOService * newService);
 
+    static bool batteryLocationPublished( void * target, void * refCon,
+                                    IOService * resourceService );
+
     void setQuickSpinDownTimeout ( void );
     void adjustPowerState( void );
     void restoreUserSpinDownTimeout ( void );
 
-    
+    IOPMPowerStateQueue     *pmPowerStateQueue;
     unsigned int user_spindown;       // User's selected disk spindown value
 
     unsigned int systemBooting:1;
@@ -126,8 +149,22 @@ private:
     unsigned int ignoringClamshellDuringWakeup:1;
     unsigned int reservedA:6;
     unsigned char reservedB[3];
+    
+    struct PMSettingCtrl {
+        IOPMSettingControllerCallback       func;
+        void                                *refcon;
+    };
 
-    thread_call_t diskSyncCalloutEntry;
+    // Private helper to call PM setting controller
+    IOReturn setPMSetting(int type, OSNumber *);
+ 
+    struct ExpansionData {    
+        PMSettingCtrl           *_settingController;
+        thread_call_t           diskSyncCalloutEntry;
+        IONotifier              *_batteryLocationNotifier;
+        IONotifier              *_displayWranglerNotifier;
+    };
+    ExpansionData   *_reserved;
     IOOptionBits platformSleepSupport;
 };
 

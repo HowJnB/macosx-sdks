@@ -2,12 +2,12 @@
    +----------------------------------------------------------------------+
    | Zend Engine                                                          |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1998-2001 Zend Technologies Ltd. (http://www.zend.com) |
+   | Copyright (c) 1998-2003 Zend Technologies Ltd. (http://www.zend.com) |
    +----------------------------------------------------------------------+
-   | This source file is subject to version 0.92 of the Zend license,     |
+   | This source file is subject to version 2.00 of the Zend license,     |
    | that is bundled with this package in the file LICENSE, and is        | 
    | available at through the world-wide-web at                           |
-   | http://www.zend.com/license/0_92.txt.                                |
+   | http://www.zend.com/license/2_00.txt.                                |
    | If you did not receive a copy of the Zend license and are unable to  |
    | obtain it through the world-wide-web, please send a note to          |
    | license@zend.com so we can mail you a copy immediately.              |
@@ -17,11 +17,12 @@
    +----------------------------------------------------------------------+
 */
 
+/* $Id: zend.h,v 1.164.2.22 2004/07/28 19:06:48 andi Exp $ */
 
 #ifndef ZEND_H
 #define ZEND_H
 
-#define ZEND_VERSION "1.1.1"
+#define ZEND_VERSION "1.3.0"
 
 #ifdef __cplusplus
 #define BEGIN_EXTERN_C() extern "C" {
@@ -39,6 +40,10 @@
 
 #ifdef ZEND_WIN32
 # include "zend_config.w32.h"
+# define ZEND_PATHS_SEPARATOR		';'
+#elif defined(NETWARE)
+# include "zend_config.nw.h"
+# include "acconfig.h"
 # define ZEND_PATHS_SEPARATOR		';'
 #elif defined(__riscos__)
 # include "zend_config.h"
@@ -62,7 +67,19 @@
 # include <dlfcn.h>
 #endif
 
-#if defined(HAVE_LIBDL)
+#if HAVE_MACH_O_DYLD_H
+#include <mach-o/dyld.h>
+
+/* MH_BUNDLE loading functions for Mac OS X / Darwin */
+void *zend_mh_bundle_load (char* bundle_path);
+int zend_mh_bundle_unload (void *bundle_handle);
+void *zend_mh_bundle_symbol(void *bundle_handle, const char *symbol_name);
+const char *zend_mh_bundle_error(void);
+
+#endif /* HAVE_MACH_O_DYLD_H */
+
+
+#if defined(HAVE_LIBDL) && !defined(HAVE_MACH_O_DYLD_H)
 
 # ifndef RTLD_LAZY
 #  define RTLD_LAZY 1    /* Solaris 1, FreeBSD's (2.1.7.1 and older) */
@@ -72,9 +89,25 @@
 #  define RTLD_GLOBAL 0
 # endif
 
-# define DL_LOAD(libname)			dlopen(libname, RTLD_LAZY | RTLD_GLOBAL)
+# if defined(RTLD_GROUP) && defined(RTLD_WORLD) && defined(RTLD_PARENT)
+#  define DL_LOAD(libname)			dlopen(libname, RTLD_LAZY | RTLD_GLOBAL | RTLD_GROUP | RTLD_WORLD | RTLD_PARENT)
+# else
+#  define DL_LOAD(libname)			dlopen(libname, RTLD_LAZY | RTLD_GLOBAL)
+# endif
 # define DL_UNLOAD					dlclose
-# define DL_FETCH_SYMBOL			dlsym
+# if DLSYM_NEEDS_UNDERSCORE
+#  define DL_FETCH_SYMBOL(h,s)		dlsym((h), "_" s)
+# else
+#  define DL_FETCH_SYMBOL			dlsym
+# endif
+# define DL_ERROR					dlerror
+# define DL_HANDLE					void *
+# define ZEND_EXTENSIONS_SUPPORT	1
+#elif defined(HAVE_MACH_O_DYLD_H)
+# define DL_LOAD(libname)			zend_mh_bundle_load(libname)
+# define DL_UNLOAD(handle)			zend_mh_bundle_unload(handle)
+# define DL_FETCH_SYMBOL(h,s)		zend_mh_bundle_symbol(h,s)
+# define DL_ERROR					zend_mh_bundle_error
 # define DL_HANDLE					void *
 # define ZEND_EXTENSIONS_SUPPORT	1
 #elif defined(ZEND_WIN32)
@@ -88,11 +121,50 @@
 # define ZEND_EXTENSIONS_SUPPORT	0
 #endif
 
-#if HAVE_ALLOCA_H
-# include <alloca.h>
+#if HAVE_ALLOCA_H && !defined(_ALLOCA_H)
+#  include <alloca.h>
 #endif
 
-#if (HAVE_ALLOCA || (defined (__GNUC__) && __GNUC__ >= 2)) && !(defined(ZTS) && defined(ZEND_WIN32))
+/* AIX requires this to be the first thing in the file.  */
+#ifndef __GNUC__
+# ifndef HAVE_ALLOCA_H
+#  ifdef _AIX
+#pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+char *alloca ();
+#   endif
+#  endif
+# endif
+#endif
+
+/* GCC x.y.z supplies __GNUC__ = x and __GNUC_MINOR__ = y */
+#ifdef __GNUC__
+# define ZEND_GCC_VERSION (__GNUC__ * 1000 + __GNUC_MINOR__)
+#else
+# define ZEND_GCC_VERSION 0 
+#endif
+
+#if ZEND_GCC_VERSION >= 2096
+# define ZEND_ATTRIBUTE_MALLOC __attribute__ ((__malloc__))
+#else
+# define ZEND_ATTRIBUTE_MALLOC
+#endif
+
+#if ZEND_GCC_VERSION >= 2007
+# define ZEND_ATTRIBUTE_FORMAT(type, idx, first) __attribute__ ((format(type, idx, first)))
+#else
+# define ZEND_ATTRIBUTE_FORMAT(type, idx, first)
+#endif
+
+#if ZEND_GCC_VERSION >= 3001
+# define ZEND_ATTRIBUTE_PTR_FORMAT(type, idx, first) __attribute__ ((format(type, idx, first)))
+#else
+# define ZEND_ATTRIBUTE_PTR_FORMAT(type, idx, first)
+#endif
+
+
+#if (HAVE_ALLOCA || (defined (__GNUC__) && __GNUC__ >= 2)) && !(defined(ZTS) && defined(ZEND_WIN32)) && !(defined(ZTS) && defined(NETWARE)) && !(defined(ZTS) && defined(HPUX)) && !defined(__darwin__) && !defined(__APPLE__)
 # define do_alloca(p) alloca(p)
 # define free_alloca(p)
 #else
@@ -137,11 +209,7 @@
 #include "zend_errors.h"
 #include "zend_alloc.h"
 
-typedef unsigned char zend_bool;
-typedef unsigned char zend_uchar;
-typedef unsigned int zend_uint;
-typedef unsigned long zend_ulong;
-typedef unsigned short zend_ushort;
+#include "zend_types.h"
 
 #ifdef HAVE_LIMITS_H
 # include <limits.h>
@@ -241,11 +309,12 @@ struct _zend_class_entry {
 	int (*handle_property_set)(zend_property_reference *property_reference, zval *value);
 };
 
+struct _zend_file_handle;
 
 
 typedef struct _zend_utility_functions {
-	void (*error_function)(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args);
-	int (*printf_function)(const char *format, ...);
+	void (*error_function)(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args) ZEND_ATTRIBUTE_PTR_FORMAT(printf, 4, 0);
+	int (*printf_function)(const char *format, ...) ZEND_ATTRIBUTE_PTR_FORMAT(printf, 1, 2);
 	int (*write_function)(const char *str, uint str_length);
 	FILE *(*fopen_function)(const char *filename, char **opened_path);
 	void (*message_handler)(long message, void *data);
@@ -253,12 +322,15 @@ typedef struct _zend_utility_functions {
 	void (*unblock_interruptions)(void);
 	int (*get_configuration_directive)(char *name, uint name_length, zval *contents);
 	void (*ticks_function)(int ticks);
+	void (*on_timeout)(int seconds TSRMLS_DC);
+	zend_bool (*open_function)(const char *filename, struct _zend_file_handle *);
 } zend_utility_functions;
 
 		
 typedef struct _zend_utility_values {
 	char *import_use_extension;
 	uint import_use_extension_length;
+	zend_bool html_errors;
 } zend_utility_values;
 
 
@@ -308,6 +380,11 @@ typedef int (*zend_write_func_t)(const char *str, uint str_length);
 
 int zend_startup(zend_utility_functions *utility_functions, char **extensions, int start_builtin_functions);
 void zend_shutdown(TSRMLS_D);
+void zend_register_standard_ini_entries(TSRMLS_D);
+
+#ifdef ZTS
+void zend_post_startup(TSRMLS_D);
+#endif
 
 void zend_set_utility_values(zend_utility_values *utility_values);
 
@@ -339,7 +416,7 @@ ZEND_API int zend_print_zval(zval *expr, int indent);
 ZEND_API int zend_print_zval_ex(zend_write_func_t write_func, zval *expr, int indent);
 ZEND_API void zend_print_zval_r(zval *expr, int indent);
 ZEND_API void zend_print_zval_r_ex(zend_write_func_t write_func, zval *expr, int indent);
-ZEND_API void zend_output_debug_string(zend_bool trigger_break, char *format, ...);
+ZEND_API void zend_output_debug_string(zend_bool trigger_break, char *format, ...) ZEND_ATTRIBUTE_FORMAT(printf, 2, 3);
 
 #if ZEND_DEBUG
 #define Z_DBG(expr)		(expr)
@@ -369,21 +446,25 @@ ZEND_API void free_estring(char **str_p);
 
 
 BEGIN_EXTERN_C()
-extern ZEND_API int (*zend_printf)(const char *format, ...);
+extern ZEND_API int (*zend_printf)(const char *format, ...) ZEND_ATTRIBUTE_PTR_FORMAT(printf, 1, 2);
 extern ZEND_API zend_write_func_t zend_write;
 extern ZEND_API FILE *(*zend_fopen)(const char *filename, char **opened_path);
+extern ZEND_API zend_bool (*zend_open)(const char *filename, struct _zend_file_handle *fh);
 extern ZEND_API void (*zend_block_interruptions)(void);
 extern ZEND_API void (*zend_unblock_interruptions)(void);
 extern ZEND_API void (*zend_ticks_function)(int ticks);
-extern ZEND_API void (*zend_error_cb)(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args);
+extern ZEND_API void (*zend_error_cb)(int type, const char *error_filename, const uint error_lineno, const char *format, va_list args) ZEND_ATTRIBUTE_PTR_FORMAT(printf, 4, 0);
+extern void (*zend_on_timeout)(int seconds TSRMLS_DC);
 
 
-ZEND_API void zend_error(int type, const char *format, ...);
+ZEND_API void zend_error(int type, const char *format, ...) ZEND_ATTRIBUTE_PTR_FORMAT(printf, 2, 3);
 
 void zenderror(char *error);
 
+/* The following #define is used for code duality in PHP for Engine 1 & 2 */
+#define ZEND_STANDARD_CLASS_DEF_PTR &zend_standard_class_def
 extern ZEND_API zend_class_entry zend_standard_class_def;
-extern zend_utility_values zend_uv;
+ZEND_API extern zend_utility_values zend_uv;
 extern ZEND_API zval zval_used_for_init;
 
 END_EXTERN_C()

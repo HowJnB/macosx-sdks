@@ -19,7 +19,6 @@
  *
  * @APPLE_LICENSE_HEADER_END@
  */
-/*
 
 /******************************************************************
 
@@ -180,7 +179,7 @@ extern "C"
 #define PCSCLITE_CONFIG_DIR		USE_READER_CONF
 #endif
 #define PCSCLITE_READER_CONFIG		PCSCLITE_CONFIG_DIR "/reader.conf"
-#define PCSCLITE_IPC_DIR		"/tmp/pcsc"
+#define PCSCLITE_IPC_DIR		"/var/run/pcscd"
 #define PCSCLITE_PUBSHM_FILE            PCSCLITE_IPC_DIR "/.pcscpub"
 #define PCSCLITE_CSOCK_NAME             PCSCLITE_IPC_DIR "/.pcscomm"
 
@@ -189,7 +188,7 @@ extern "C"
 #define INFINITE                     0xFFFFFFFF	/* Infinite timeout */
 #define PCSCLITE_INFINITE_TIMEOUT    4320000	/* 50 day infinite t/o */
 
-#define PCSCLITE_VERSION_NUMBER		"1.1.1"	/* Current version */
+#define PCSCLITE_VERSION_NUMBER		"1.1.2"	/* Current version */
 #define PCSCLITE_CLIENT_ATTEMPTS        120	/* Attempts to reach sv */
 #define PCSCLITE_MCLIENT_ATTEMPTS       20	/* Attempts to reach sv */
 #define PCSCLITE_STATUS_POLL_RATE       400000	/* Status polling rate */

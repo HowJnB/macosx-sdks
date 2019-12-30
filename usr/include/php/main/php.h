@@ -1,8 +1,8 @@
 /*
    +----------------------------------------------------------------------+
-   | PHP version 4.0                                                      |
+   | PHP Version 4                                                        |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1997-2001 The PHP Group                                |
+   | Copyright (c) 1997-2003 The PHP Group                                |
    +----------------------------------------------------------------------+
    | This source file is subject to version 2.02 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -17,7 +17,7 @@
    +----------------------------------------------------------------------+
  */
 
-/* $Id: php.h,v 1.1.1.5 2001/12/14 22:13:46 zarzycki Exp $ */
+/* $Id: php.h,v 1.178.2.10 2004/11/28 12:44:56 sesser Exp $ */
 
 #ifndef PHP_H
 #define PHP_H
@@ -26,20 +26,23 @@
 #include <dmalloc.h>
 #endif
 
-#define PHP_API_VERSION 20010901
-
+#define PHP_API_VERSION 20020918
+#define PHP_HAVE_STREAMS
 #define YYDEBUG 0
 
 #include "php_version.h"
 #include "zend.h"
+#include "zend_qsort.h"
 #include "php_compat.h"
 
 #include "zend_API.h"
 
-#if PHP_BROKEN_SPRINTF
 #undef sprintf
 #define sprintf php_sprintf
-#endif
+
+/* PHP's DEBUG value must match Zend's ZEND_DEBUG value */
+#undef PHP_DEBUG
+#define PHP_DEBUG ZEND_DEBUG
 
 #ifdef PHP_WIN32
 #include "tsrm_win32.h"
@@ -50,21 +53,44 @@
 #	define PHPAPI __declspec(dllimport)
 #	endif
 #define PHP_DIR_SEPARATOR '\\'
+#define PHP_EOL "\r\n"
 #else
 #define PHPAPI
 #define THREAD_LS
 #define PHP_DIR_SEPARATOR '/'
+#if defined(__MacOSX__)
+#define PHP_EOL "\r"
+#else 
+#define PHP_EOL "\n"
+#endif
+#endif
+
+#ifdef NETWARE
+/* For php_get_uname() function */
+#define PHP_UNAME  "NetWare"
+/*
+ * This is obtained using uname(2) on Unix and assigned in the case of Windows;
+ * we'll do it this way at least for now.
+ */
+#define PHP_OS      PHP_UNAME
 #endif
 
 #include "php_regex.h"
 
-/* PHP's DEBUG value must match Zend's ZEND_DEBUG value */
-#undef PHP_DEBUG
-#define PHP_DEBUG ZEND_DEBUG
-
+#if HAVE_ASSERT_H
+#if PHP_DEBUG
+#undef NDEBUG
+#else
+#ifndef NDEBUG
+#define NDEBUG
+#endif
+#endif
+#include <assert.h>
+#else /* HAVE_ASSERT_H */
+#define assert(expr) ((void) (0))
+#endif /* HAVE_ASSERT_H */
 
 #define APACHE 0
-#define CGI_BINARY 0
 
 #if HAVE_UNIX_H
 #include <unix.h>
@@ -72,6 +98,10 @@
 
 #if HAVE_ALLOCA_H
 #include <alloca.h>
+#endif
+
+#if HAVE_BUILD_DEFS_H
+#include "build-defs.h"
 #endif
 
 /*
@@ -97,11 +127,13 @@
 
 #ifndef HAVE_STRLCPY
 PHPAPI size_t php_strlcpy(char *dst, const char *src, size_t siz);
+#undef strlcpy
 #define strlcpy php_strlcpy
 #endif
 
 #ifndef HAVE_STRLCAT
 PHPAPI size_t php_strlcat(char *dst, const char *src, size_t siz);
+#undef strlcat
 #define strlcat php_strlcat
 #endif
 
@@ -159,9 +191,6 @@ typedef unsigned int socklen_t;
 char *strerror(int);
 #endif
 
-#include "php_streams.h"
-#include "fopen_wrappers.h"
-
 #if (REGEX == 1 || REGEX == 0) && !defined(NO_REGEX_EXTRA_H)
 #include "regex/regex_extra.h"
 #endif
@@ -170,6 +199,13 @@ char *strerror(int);
 # ifdef PHP_WIN32
 #include "win32/pwd.h"
 #include "win32/param.h"
+#elif defined(NETWARE)
+#ifdef NEW_LIBC
+#include <sys/param.h>
+#else
+#include "NetWare/param.h"
+#endif
+#include "NetWare/pwd.h"
 # else
 #include <pwd.h>
 #include <sys/param.h>
@@ -188,9 +224,20 @@ char *strerror(int);
 #define LONG_MIN (- LONG_MAX - 1)
 #endif
 
-#if !defined(HAVE_SNPRINTF) || !defined(HAVE_VSNPRINTF) || defined(BROKEN_SPRINTF) || defined(BROKEN_SNPRINTF) || defined(BROKEN_VSNPRINTF)
-#include "snprintf.h"
+#ifndef INT_MAX
+#define INT_MAX 2147483647
 #endif
+
+#ifndef INT_MIN
+#define INT_MIN (- INT_MAX - 1)
+#endif
+
+#define PHP_GCC_VERSION ZEND_GCC_VERSION
+#define PHP_ATTRIBUTE_MALLOC ZEND_ATTRIBUTE_MALLOC
+#define PHP_ATTRIBUTE_FORMAT ZEND_ATTRIBUTE_FORMAT
+
+#include "snprintf.h"
+#include "spprintf.h"
 
 #define EXEC_INPUT_BUF 4096
 
@@ -207,11 +254,23 @@ char *strerror(int);
 # endif
 #endif
 
+
 /* global variables */
 extern pval *data;
 #if !defined(PHP_WIN32)
+#ifdef NETWARE
+#ifdef NEW_LIBC
+/*#undef environ*/  /* For now, so that our 'environ' implementation is used */
+#define php_sleep sleep
+#else
+#define php_sleep   delay   /* sleep() and usleep() are not available */
+#define usleep      delay
+#endif
+extern char **environ;
+#else
 extern char **environ;
 #define php_sleep sleep
+#endif
 #endif
 
 #ifdef PHP_PWRITE_64
@@ -224,12 +283,30 @@ ssize_t pread(int, void *, size_t, off64_t);
 
 void phperror(char *error);
 PHPAPI int php_write(void *buf, uint size TSRMLS_DC);
-PHPAPI int php_printf(const char *format, ...);
+PHPAPI int php_printf(const char *format, ...) PHP_ATTRIBUTE_FORMAT(printf, 1, 2);
 PHPAPI void php_log_err(char *log_message TSRMLS_DC);
-int Debug(char *format, ...);
+int Debug(char *format, ...) PHP_ATTRIBUTE_FORMAT(printf, 1, 2);
 int cfgparse(void);
 
 #define php_error zend_error
+
+PHPAPI void php_verror(const char *docref, const char *params, int type, const char *format, va_list args TSRMLS_DC) PHP_ATTRIBUTE_FORMAT(printf, 4, 0);
+
+#ifdef ZTS
+#define PHP_ATTR_FMT_OFFSET 1
+#else
+#define PHP_ATTR_FMT_OFFSET 0
+#endif
+
+/* PHPAPI void php_error(int type, const char *format, ...); */
+PHPAPI void php_error_docref0(const char *docref TSRMLS_DC, int type, const char *format, ...) 
+	PHP_ATTRIBUTE_FORMAT(printf, PHP_ATTR_FMT_OFFSET + 3, PHP_ATTR_FMT_OFFSET + 4);
+PHPAPI void php_error_docref1(const char *docref TSRMLS_DC, const char *param1, int type, const char *format, ...) 
+	PHP_ATTRIBUTE_FORMAT(printf, PHP_ATTR_FMT_OFFSET + 4, PHP_ATTR_FMT_OFFSET + 5);
+PHPAPI void php_error_docref2(const char *docref TSRMLS_DC, const char *param1, const char *param2, int type, const char *format, ...) 
+	PHP_ATTRIBUTE_FORMAT(printf, PHP_ATTR_FMT_OFFSET + 5, PHP_ATTR_FMT_OFFSET + 6);
+
+#define php_error_docref php_error_docref0
 
 #define zenderror phperror
 #define zendlex phplex
@@ -241,7 +318,7 @@ int cfgparse(void);
 /* functions */
 int php_startup_internal_extensions(void);
 
-int php_mergesort(void *base, size_t nmemb, register size_t size, int (*cmp) (const void *, const void *));
+int php_mergesort(void *base, size_t nmemb, register size_t size, int (*cmp)(const void *, const void * TSRMLS_DC) TSRMLS_DC);
 
 PHPAPI void php_register_pre_request_shutdown(void (*func)(void *), void *userdata);
 
@@ -289,15 +366,28 @@ PHPAPI int cfg_get_string(char *varname, char **result);
 /* Output support */
 #include "main/php_output.h"
 #define PHPWRITE(str, str_len)		php_body_write((str), (str_len) TSRMLS_CC)
-#define PUTS(str)					php_body_write((str), strlen((str)) TSRMLS_CC)
+#define PUTS(str)					do {			\
+	const char *__str = (str);						\
+	php_body_write(__str, strlen(__str) TSRMLS_CC);	\
+} while (0)
+
 #define PUTC(c)						(php_body_write(&(c), 1 TSRMLS_CC), (c))
 #define PHPWRITE_H(str, str_len)	php_header_write((str), (str_len) TSRMLS_CC)
-#define PUTS_H(str)					php_header_write((str), strlen((str)) TSRMLS_CC)
+#define PUTS_H(str)					do {				\
+	const char *__str = (str);							\
+	php_header_write(__str, strlen(__str) TSRMLS_CC);	\
+} while (0)
+
 #define PUTC_H(c)					(php_header_write(&(c), 1 TSRMLS_CC), (c))
 
 #ifdef ZTS
 #define VIRTUAL_DIR
 #endif
+
+#include "php_streams.h"
+#include "php_memory_streams.h"
+#include "fopen_wrappers.h"
+
 
 /* Virtual current working directory support */
 #include "tsrm_virtual_cwd.h"
@@ -315,6 +405,7 @@ PHPAPI int cfg_get_string(char *varname, char **result);
  * Taken from the Apache code, which in turn, was taken from X code...
  */
 
+#ifndef XtOffset
 #if defined(CRAY) || (defined(__arm) && !defined(LINUX))
 #ifdef __STDC__
 #define XtOffset(p_type, field) _Offsetof(p_type, field)
@@ -335,14 +426,15 @@ PHPAPI int cfg_get_string(char *varname, char **result);
     ((long) (((char *) (&(((p_type)NULL)->field))) - ((char *) NULL)))
 
 #endif /* !CRAY */
+#endif /* ! XtOffset */
 
+#ifndef XtOffsetOf
 #ifdef offsetof
 #define XtOffsetOf(s_type, field) offsetof(s_type, field)
 #else
 #define XtOffsetOf(s_type, field) XtOffset(s_type*, field)
 #endif
-
-PHPAPI PHP_FUNCTION(warn_not_available);
+#endif /* !XtOffsetOf */
 
 #endif
 
@@ -351,6 +443,6 @@ PHPAPI PHP_FUNCTION(warn_not_available);
  * tab-width: 4
  * c-basic-offset: 4
  * End:
- * vim600: sw=4 ts=4 tw=78 fdm=marker
- * vim<600: sw=4 ts=4 tw=78
+ * vim600: sw=4 ts=4 fdm=marker
+ * vim<600: sw=4 ts=4
  */

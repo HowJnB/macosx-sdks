@@ -6,7 +6,7 @@
       Version:   Technology: Mac OS X
                  Release:    Mac OS X
  
-    Copyright:   (c) 2002 by Apple Computer, Inc., all rights reserved
+    Copyright:   (c) 2002-2003 by Apple Computer, Inc., all rights reserved
  
      Bugs?:      For bug reports, consult the following page on
                  the World Wide Web:
@@ -15,8 +15,14 @@
  
 */
 
+/*!	@header			DREraseSetupPanel.h
+	@abstract		Panel to create and configure a DRErase object.
+	@discussion		The @link //apple_ref/occ/cl/DREraseSetupPanel DREraseSetupPanel @/link supports choosing the 
+					device to use and what sort of erase to perform.
+*/
+
+#import <DiscRecording/DiscRecording.h>
 #import <DiscRecordingUI/DRSetupPanel.h>
-#import <DiscRecording/DRErase.h>
 
 /*!
 	@class			DREraseSetupPanel
@@ -33,7 +39,7 @@
 					means that if the erase object obtained from the
 					panel is not used to do an erase, the device will
 					remain unavailable to other applications until the
-					esclusive access is released.
+					exclusive access is released.
 */
 @interface DREraseSetupPanel : DRSetupPanel
 {
@@ -41,7 +47,7 @@
 	IBOutlet NSMatrix*		_eraseTypes;
 
 	id						_state;
-	int						_exclusivity;
+	void*					_auxStorage;
 }
 
 /* --------------------------------------------------------------------------- */
@@ -58,15 +64,16 @@
 /* Getting the configured erase object */
 
 /*! 
-   @method 			eraseObject
-   @abstract 		Returns a configured DRErase object which is ready 
-   					to the disc in the currently selected device.
-   @discussion		Do not invoke this method within a modal session
-					(<b>runSetupPanel</b> or
-					<b>setupPanelForWindow:modalDelegate:didEndSelector:contextInfo:</b>) 
-					because the erase object information is
-					only updated just before the modal session ends.
-   @result  		A DRErase object.
+	@method 	eraseObject
+	@abstract	Creates and returns a new DRErase object that's configured to erase the disc in the currently selected device.
+	@discussion	The new DRErase object is configured based on the settings in the setup panel
+				when the user clicks the OK button.
+				
+				Do not invoke this method within a modal session (@link //apple_ref/occ/instm/DRSetupPanel/runSetupPanel runSetupPanel @/link or
+				@link //apple_ref/occ/instm/DRSetupPanel/beginSetupSheetForWindow%58modalDelegate%58didEndSelector%58contextInfo%58 beginSetupSheetForWindow:modalDelegate:didEndSelector:contextInfo: @/link)
+				because the erase object information is only updated just before the
+				modal session ends.
+	@result  	A new DRErase object.
 */
 - (DRErase*) eraseObject;
 

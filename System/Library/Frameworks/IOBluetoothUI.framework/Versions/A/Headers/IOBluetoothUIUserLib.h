@@ -8,6 +8,10 @@
 
 #include <IOBluetooth/IOBluetoothUserLib.h>
 
+#ifdef	__cplusplus
+	extern "C" {
+#endif
+
 typedef struct OpaqueIOBluetoothObjectRef *			IOBluetoothDeviceSelectorControllerRef;
 typedef struct OpaqueIOBluetoothObjectRef *			IOBluetoothPairingControllerRef;
 typedef struct OpaqueIOBluetoothObjectRef *			IOBluetoothServiceBrowserControllerRef;
@@ -32,6 +36,7 @@ enum
 {
 	kIOBluetoothServiceBrowserControllerOptionsNone					= (0 << 0L),
 	kIOBluetoothServiceBrowserControllerOptionsAutoStartInquiry		= (1 << 0L),
+    kIOBluetoothServiceBrowserControllerOptionsDisconnectWhenDone	= (2 << 0L)
 };
 
 
@@ -150,4 +155,8 @@ CFArrayRef	IOBluetoothDeviceSelectorRunPanelWithAttributes(IOBluetoothDeviceSele
 #endif
 
 
-IOReturn IOBluetoothValidateHardware( CFStringRef cancelButtonTitle );
+IOReturn IOBluetoothValidateHardware( CFStringRef cancelButtonTitle ) AVAILABLE_BLUETOOTH_VERSION_1_1_AND_LATER;
+
+#ifdef	__cplusplus
+	}
+#endif

@@ -203,16 +203,27 @@ enum {
     kIOPacketFilterMulticast       = 0x10,
     kIOPacketFilterMulticastAll    = 0x20,
     kIOPacketFilterPromiscuous     = 0x100,
-    kIOPacketFilterPromiscuousAll  = 0x200,
+    kIOPacketFilterPromiscuousAll  = 0x200
 };
 
-/*! @enum Feature flags returned by the getFeatures() method.
-    @constant kIONetworkFeatureNoBSDWait Set this bit in the value
-        returned by getFeatures() to disable the automatic wait for
-        "IOBSD" resource by the IONetworkController::start() method. */
+/*!	@enum Feature flags returned by the getFeatures() method.
+@constant kIONetworkFeatureNoBSDWait Set this bit in the value
+returned by getFeatures() to disable the automatic wait for
+"IOBSD" resource by the IONetworkController::start() method. 
+@constant kIONetworkFeaturesHardwareVlan Set this bit in the value
+returned by getFeatures() to indicate the controller supports hardware
+stripping and stuffing of 802.1q vlan tags.  If the controller supports
+this feature it must enable it when initializing so that all received
+packets delivered to higher layers have the tag stripped.  The controller
+should use setVlanTag() to provide the tag information out of band.
+@constant kIONetworkFeaturesSoftwareVlan Set this bit in the value
+returned by getFeatures() to indicate that the controller can support software
+based vlan by transmitting and receiving packets 4 bytes longer that normal. */
 
 enum {
     kIONetworkFeatureNoBSDWait = 0x01,
+	kIONetworkFeatureHardwareVlan = 0x02,
+	kIONetworkFeatureSoftwareVlan = 0x4
 };
 
 /*
@@ -251,7 +262,7 @@ enum {
     kIOPacketBufferAlign4   = 4,
     kIOPacketBufferAlign8   = 8,
     kIOPacketBufferAlign16  = 16,
-    kIOPacketBufferAlign32  = 32,
+    kIOPacketBufferAlign32  = 32
 };
 
 /*!	@defined gIONetworkFilterGroup
@@ -857,7 +868,7 @@ public:
         kChecksumUDP                 = 0x0004,
         kChecksumTCPNoPseudoHeader   = 0x0100,
         kChecksumUDPNoPseudoHeader   = 0x0200,
-        kChecksumTCPSum16            = 0x1000,
+        kChecksumTCPSum16            = 0x1000
     };
 
 /*! @function getChecksumSupport

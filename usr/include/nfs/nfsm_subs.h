@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000-2002 Apple Computer, Inc. All rights reserved.
+ * Copyright (c) 2000-2004 Apple Computer, Inc. All rights reserved.
  *
  * @APPLE_LICENSE_HEADER_START@
  * 
@@ -239,25 +239,17 @@ struct mbuf *nfsm_rpchead __P((struct ucred *cr, int nmflag, int procid,
 			(v) = ttvp; \
 		} }
 
-/* Used as (f) for nfsm_wcc_data() */
-#define NFSV3_WCCRATTR	0
-#define NFSV3_WCCCHK	1
-
-#define	nfsm_wcc_data(v, f, x) \
-		{ int ttattrf, ttretf = 0; \
+#define	nfsm_wcc_data(v, premtime, newpostattr, x) \
+		{ \
 		nfsm_dissect(tl, u_long *, NFSX_UNSIGNED); \
 		if (*tl == nfs_true) { \
 			nfsm_dissect(tl, u_long *, 6 * NFSX_UNSIGNED); \
-			if (f) \
-				ttretf = (VTONFS(v)->n_mtime == \
-					fxdr_unsigned(u_long, *(tl + 2))); \
-		} \
-		nfsm_postop_attr((v), ttattrf, (x)); \
-		if (f) { \
-			(f) = ttretf; \
+			(premtime) = fxdr_unsigned(time_t, *(tl + 2)); \
 		} else { \
-			(f) = ttattrf; \
-		} }
+			(premtime) = 0; \
+		} \
+		nfsm_postop_attr((v), (newpostattr), (x)); \
+		}
 
 #define nfsm_v3sattr(s, a, u, g) \
 		{ (s)->sa_modetrue = nfs_true; \
@@ -331,7 +323,12 @@ struct mbuf *nfsm_rpchead __P((struct ucred *cr, int nmflag, int procid,
 */
 #define	nfsm_request(v, t, p, c, x)	\
                 { \
-                int nfsv3 = (VFSTONFS((v)->v_mount))->nm_flag & NFSMNT_NFSV3; \
+                int nfsv3; \
+		if (!VFSTONFS((v)->v_mount)) { \
+			error = ENXIO; \
+			goto nfsmout; \
+		} \
+                nfsv3 = (VFSTONFS((v)->v_mount))->nm_flag & NFSMNT_NFSV3; \
 		if ((error = nfs_request((v), mreq, (t), (p), \
 		   (c), &mrep, &md, &dpos, (x)))) { \
 			if (error & NFSERR_RETERR) \
@@ -339,11 +336,6 @@ struct mbuf *nfsm_rpchead __P((struct ucred *cr, int nmflag, int procid,
 			else \
 				goto nfsmout; \
 		} \
-                else if ((v)->v_type==VBAD) { \
-                    error = EINVAL; \
-                    if (!nfsv3) \
-                        goto nfsmout; \
-                } \
                 }
 
 #define	nfsm_strtom(a,s,m) \
@@ -378,6 +370,7 @@ struct mbuf *nfsm_rpchead __P((struct ucred *cr, int nmflag, int procid,
 		   (void) nfs_rephead((s), nfsd, slp, error, cache, &frev, \
 			mrq, &mb, &bpos); \
 		m_freem(mrep); \
+		mrep = NULL; \
 		mreq = *mrq; \
 		if (error && (!(nfsd->nd_flag & ND_NFSV3) || \
 			error == EBADRPC)) \
@@ -443,7 +436,9 @@ struct mbuf *nfsm_rpchead __P((struct ucred *cr, int nmflag, int procid,
 		nfsm_srvpostopattr(nfsd, (r), (a), &mb, &bpos)
 
 #define nfsm_srvsattr(a) \
-		{ nfsm_dissect(tl, u_long *, NFSX_UNSIGNED); \
+		{ \
+		struct timeval now; \
+		nfsm_dissect(tl, u_long *, NFSX_UNSIGNED); \
 		if (*tl == nfs_true) { \
 			nfsm_dissect(tl, u_long *, NFSX_UNSIGNED); \
 			(a)->va_mode = nfstov_mode(*tl); \
@@ -464,14 +459,15 @@ struct mbuf *nfsm_rpchead __P((struct ucred *cr, int nmflag, int procid,
 			fxdr_hyper(tl, &(a)->va_size); \
 		} \
 		nfsm_dissect(tl, u_long *, NFSX_UNSIGNED); \
+		microtime(&now); \
 		switch (fxdr_unsigned(int, *tl)) { \
 		case NFSV3SATTRTIME_TOCLIENT: \
 			nfsm_dissect(tl, u_long *, 2 * NFSX_UNSIGNED); \
 			fxdr_nfsv3time(tl, &(a)->va_atime); \
 			break; \
 		case NFSV3SATTRTIME_TOSERVER: \
-			(a)->va_atime.tv_sec = time.tv_sec; \
-			(a)->va_atime.tv_nsec = time.tv_usec * 1000; \
+			(a)->va_atime.tv_sec = now.tv_sec; \
+			(a)->va_atime.tv_nsec = now.tv_usec * 1000; \
 			break; \
 		}; \
 		nfsm_dissect(tl, u_long *, NFSX_UNSIGNED); \
@@ -481,8 +477,8 @@ struct mbuf *nfsm_rpchead __P((struct ucred *cr, int nmflag, int procid,
 			fxdr_nfsv3time(tl, &(a)->va_mtime); \
 			break; \
 		case NFSV3SATTRTIME_TOSERVER: \
-			(a)->va_mtime.tv_sec = time.tv_sec; \
-			(a)->va_mtime.tv_nsec = time.tv_usec * 1000; \
+			(a)->va_mtime.tv_sec = now.tv_sec; \
+			(a)->va_mtime.tv_nsec = now.tv_usec * 1000; \
 			break; \
 		}; }
 

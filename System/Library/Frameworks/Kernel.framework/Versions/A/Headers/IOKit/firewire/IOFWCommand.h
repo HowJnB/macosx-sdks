@@ -72,6 +72,8 @@ typedef void (*FWBusCallback)(void *refcon, IOReturn status, IOFireWireBus *bus,
 // Callback when async stream command completes asynchronously
 typedef void (*FWAsyncStreamCallback)(void *refcon, IOReturn status, IOFireWireBus *bus, IOFWAsyncStreamCommand *fwCmd);
 
+#pragma mark -
+
 /*
  * Base class for FireWire commands
  */
@@ -175,6 +177,8 @@ private:
 
 };
 
+#pragma mark -
+
 /*
  * Bus control commands
  */
@@ -207,6 +211,8 @@ private:
     OSMetaClassDeclareReservedUnused(IOFWBusCommand, 0);
 
 };
+
+#pragma mark -
 
 /*
  * Command to execute some code after a specified delay (in microseconds)
@@ -247,6 +253,8 @@ private:
 class IOFWUserReadQuadletCommand ;
 class IOFWUserWriteCommand ;
 
+#pragma mark -
+
 /*! @class IOFWAsyncCommand
 */
 class IOFWAsyncCommand : public IOFWCommand
@@ -277,7 +285,10 @@ protected:
 		// some of our subclasses didn't have room for expansion data, so
 		// we've reserved space for their use here.
 		
-		void *	fSubclassMembers; 
+		void *	fSubclassMembers;
+		int		fMaxSpeed;
+		int		fAckCode;
+		UInt32	fResponseCode;
 	} 
 	MemberVariables;
 
@@ -342,6 +353,17 @@ public:
         return kIOReturnSuccess;
     }
 
+	void setMaxSpeed( int speed );
+	
+	void setAckCode( int ack );
+	int getAckCode( void );
+
+	void setRetries( int retries);
+	int getMaxRetries( void );
+
+	void setResponseCode( UInt32 rcode );
+	UInt32 getResponseCode( void ) const;
+			
 private:
     OSMetaClassDeclareReservedUnused(IOFWAsyncCommand, 0);
     OSMetaClassDeclareReservedUnused(IOFWAsyncCommand, 1);
@@ -349,6 +371,8 @@ private:
     OSMetaClassDeclareReservedUnused(IOFWAsyncCommand, 3);
 
 };
+
+#pragma mark -
 
 /*
  * Concrete async requests - read, write and hordes of read/modify/write
@@ -381,6 +405,8 @@ private:
     OSMetaClassDeclareReservedUnused(IOFWReadCommand, 0);
     OSMetaClassDeclareReservedUnused(IOFWReadCommand, 1);
 };
+
+#pragma mark -
 
 /*!
 	@class IOFWReadQuadCommand
@@ -424,6 +450,8 @@ private:
     OSMetaClassDeclareReservedUnused(IOFWReadQuadCommand, 0);
     OSMetaClassDeclareReservedUnused(IOFWReadQuadCommand, 1);
 };
+
+#pragma mark -
 
 class IOFWWriteCommand : public IOFWAsyncCommand
 {
@@ -486,6 +514,8 @@ private:
     OSMetaClassDeclareReservedUnused(IOFWWriteCommand, 1);
 
 };
+
+#pragma mark -
 
 /*!
 	@class IOFWWriteQuadCommand
@@ -582,11 +612,13 @@ private:
 
 };
 
-
 /*
  * May need more parameters for some of these,
  * and/or derive from a base Lock transaction command
  */
+
+#pragma mark -
+
 /*! @class IOFWCompareAndSwapCommand
 */
 class IOFWCompareAndSwapCommand : public IOFWAsyncCommand
@@ -654,6 +686,8 @@ private:
 /*
  * Send an async stream packet
  */
+
+#pragma mark -
 
 /*! @class IOFWAsyncStreamCommand
 */

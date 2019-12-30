@@ -31,14 +31,16 @@
  * @abstract Used to identify the type of memory requested by a client process to be mapped into its process space
  * @discussion This is the parameter to the type field of IOMapMemory when called on an IOAudioEngine.  This is
  *  only intended for use by the Audio Device API library.
- * @constant kSampleBuffer This requests the IOAudioEngine's sample buffer
- * @constant kStatus This requests the IOAudioEngine's status buffer.  It's type is IOAudioEngineStatus.
- * @constant kMixBuffer This requests the IOAudioEngine's mix buffer
+ * @constant kIOAudioSampleBuffer This requests the IOAudioEngine's sample buffer
+ * @constant kIOAudioStatusBuffer This requests the IOAudioEngine's status buffer.  It's type is IOAudioEngineStatus.
+ * @constant kIOAudioMixBuffer This requests the IOAudioEngine's mix buffer
 */
 typedef enum _IOAudioEngineMemory {
-    kStatusBuffer 	= 0,
-    kSampleBuffer	= 1,
-    kMixBuffer		= 2
+    kIOAudioStatusBuffer 			= 0,
+    kIOAudioSampleBuffer			= 1,
+    kIOAudioMixBuffer				= 2,
+	kIOAudioBytesInInputBuffer		= 3,
+	kIOAudioBytesInOutputBuffer		= 4
 } IOAudioEngineMemory;
 
 /*!
@@ -51,11 +53,12 @@ typedef enum _IOAudioEngineCalls {
     kIOAudioEngineCallUnregisterClientBuffer		= 1,
     kIOAudioEngineCallGetConnectionID				= 2,
     kIOAudioEngineCallStart							= 3,
-    kIOAudioEngineCallStop							= 4
+    kIOAudioEngineCallStop							= 4,
+	kIOAudioEngineCallGetNearestStartTime			= 5
 } IOAudioEngineCalls;
 
 /*! @defined kIOAudioEngineNumCalls The number of elements in the IOAudioEngineCalls enum. */
-#define kIOAudioEngineNumCalls		5
+#define kIOAudioEngineNumCalls		6
 
 typedef enum _IOAudioEngineTraps {
     kIOAudioEngineTrapPerformClientIO				= 0
@@ -144,6 +147,89 @@ typedef struct _IOAudioSampleIntervalDescriptor {
 } IOAudioSampleIntervalDescriptor;
 
 /*!
+    @struct         SMPTETime
+    @abstract       A structure for holding a SMPTE time.
+    @field          fSubframes
+                        The number of subframes in the full message.
+    @field          fSubframeDivisor
+                        The number of subframes per frame (typically 80).
+    @field          fCounter
+                        The total number of messages received.
+    @field          fType
+                        The kind of SMPTE time using the SMPTE time type constants.
+    @field          fFlags
+                        A set of flags that indicate the SMPTE state.
+    @field          fHours
+                        The number of hourse in the full message.
+    @field          fMinutes
+                        The number of minutes in the full message.
+    @field          fSeconds
+                        The number of seconds in the full message.
+    @field          fFrames
+                        The number of frames in the full message.
+*/
+typedef struct _IOAudioSMPTETime
+{
+    SInt16  fSubframes;
+    SInt16  fSubframeDivisor;
+    UInt32  fCounter;
+    UInt32  fType;
+    UInt32  fFlags;
+    SInt16  fHours;
+    SInt16  fMinutes;
+    SInt16  fSeconds;
+    SInt16  fFrames;
+
+} IOAudioSMPTETime;
+
+//	constants describing SMPTE types (taken from the MTC spec)
+enum
+{
+	kIOAudioSMPTETimeType24			= 0,
+	kIOAudioSMPTETimeType25			= 1,
+	kIOAudioSMPTETimeType30Drop		= 2,
+	kIOAudioSMPTETimeType30			= 3,
+	kIOAudioSMPTETimeType2997		= 4,
+	kIOAudioSMPTETimeType2997Drop	= 5
+};
+
+//	flags describing a SMPTE time stamp
+enum
+{
+	kIOAudioSMPTETimeValid		= (1L << 0),	//	the full time is valid
+	kIOAudioSMPTETimeRunning	= (1L << 1)		//	time is running
+};
+
+//	A struct for encapsulating the parts of a time stamp. The flags
+//	say which fields are valid.
+typedef struct _IOAudioTimeStamp
+{
+	UInt64				fSampleTime;	//	the absolute sample time, was a Float64
+	UInt64				fHostTime;		//	the host's root timebase's time
+	UInt64				fRateScalar;	//	the system rate scalar, was a Float64
+	UInt64				fWordClockTime;	//	the word clock time
+	IOAudioSMPTETime	fSMPTETime;		//	the SMPTE time
+	UInt32				fFlags;			//	the flags indicate which fields are valid
+	UInt32				fReserved;		//	reserved, pads the structure out to force 8 byte alignment
+} IOAudioTimeStamp;
+
+//	flags for the AudioTimeStamp sturcture
+enum
+{
+	kIOAudioTimeStampSampleTimeValid	= (1L << 0),
+	kIOAudioTimeStampHostTimeValid		= (1L << 1),
+	kIOAudioTimeStampRateScalarValid	= (1L << 2),
+	kIOAudioTimeStampWordClockTimeValid	= (1L << 3),
+	kIOAudioTimeStampSMPTETimeValid		= (1L << 4)
+};
+
+//	Some commonly used combinations of timestamp flags
+enum
+{
+	kIOAudioTimeStampSampleHostTimeValid	= (kIOAudioTimeStampSampleTimeValid | kIOAudioTimeStampHostTimeValid)
+};
+
+/*!
 * @enum IOAudioStreamDirection
  * @abstract Represents the direction of an IOAudioStream
  * @constant kAudioOutput Output buffer
@@ -155,6 +241,12 @@ typedef enum _IOAudioStreamDirection {
     kIOAudioStreamDirectionInput	= 1
 } IOAudioStreamDirection;
 
+enum {
+	kIOAudioDeviceCanBeDefaultNothing	= 0,
+	kIOAudioDeviceCanBeDefaultInput		= (1L << 0),
+	kIOAudioDeviceCanBeDefaultOutput	= (1L << 1),
+	kIOAudioDeviceCanBeSystemOutput		= (1L << 2)
+};
 
 /*!
  * @defined kIOAudioEngineDefaultMixBufferSampleSize
@@ -240,15 +332,23 @@ enum {
 };
 
 enum {
-    kIOAudioLevelControlSubTypeVolume			= 'vlme',
-	kIOAudioLevelControlSubTypeLFEVolume		= 'subv',
-	kIOAudioLevelControlSubTypePRAMVolume		= 'pram',
-    kIOAudioToggleControlSubTypeMute			= 'mute',
-	kIOAudioToggleControlSubTypeLFEMute			= 'subm',
-	kIOAudioToggleControlSubTypeiSubAttach		= 'atch',
-    kIOAudioSelectorControlSubTypeOutput		= 'outp',
-    kIOAudioSelectorControlSubTypeInput			= 'inpt',
-    kIOAudioSelectorControlSubTypeClockSource	= 'clck'
+    kIOAudioLevelControlSubTypeVolume						= 'vlme',
+	kIOAudioLevelControlSubTypeLFEVolume					= 'subv',
+	kIOAudioLevelControlSubTypePRAMVolume					= 'pram',
+    kIOAudioToggleControlSubTypeMute						= 'mute',
+    kIOAudioToggleControlSubTypeSolo						= 'solo',
+	kIOAudioToggleControlSubTypeLFEMute						= 'subm',
+	kIOAudioToggleControlSubTypeiSubAttach					= 'atch',
+    kIOAudioSelectorControlSubTypeOutput					= 'outp',
+    kIOAudioSelectorControlSubTypeInput						= 'inpt',
+    kIOAudioSelectorControlSubTypeClockSource				= 'clck',
+    kIOAudioSelectorControlSubTypeDestination				= 'dest',
+	kIOAudioSelectorControlSubTypeChannelNominalLineLevel	= 'nlev',
+	kIOAudioSelectorControlSubTypeChannelLevelPlus4dBu		= '4dbu',
+	kIOAudioSelectorControlSubTypeChannelLevelMinus10dBV	= '10db',
+	kIOAudioSelectorControlSubTypeChannelLevelMinus20dBV	= '20db',
+	kIOAudioSelectorControlSubTypeChannelLevelMicLevel		= 'micl',
+	kIOAudioSelectorControlSubTypeChannelLevelInstrumentLevel		= 'istl'
 };
 
 enum {
@@ -296,27 +396,46 @@ enum {
     kIOAudioStreamSampleFormatAC3			= 'ac-3',
     kIOAudioStreamSampleFormat1937AC3		= 'cac3',
     kIOAudioStreamSampleFormat1937MPEG1		= 'mpg1',
-    kIOAudioStreamSampleFormat1937MPEG2		= 'mpg2'
+    kIOAudioStreamSampleFormat1937MPEG2		= 'mpg2',
+	kIOAudioStreamSampleFormatTimeCode		= 'time'		//	a stream of IOAudioTimeStamp structures that capture any incoming time code information
 };
 
 enum {
     kIOAudioStreamNumericRepresentationSignedInt	= 'sint',
-    kIOAudioStreamNumericRepresentationUnsignedInt	= 'uint'
-// Need float format(s) here
+    kIOAudioStreamNumericRepresentationUnsignedInt	= 'uint',
+	kIOAudioStreamNumericRepresentationIEEE754Float = 'flot'
 };
 
 enum {
-    kIOAudioStreamAlignmentLowByte		= 0,
-    kIOAudioStreamAlignmentHighByte		= 1
+	kIOAudioClockSelectorTypeInternal			= 'int ',
+	kIOAudioClockSelectorTypeExternal			= 'ext ',
+	kIOAudioClockSelectorTypeAESEBU				= 'asbu',
+	kIOAudioClockSelectorTypeTOSLink			= 'tosl',
+	kIOAudioClockSelectorTypeSPDIF				= 'spdf',
+	kIOAudioClockSelectorTypeADATOptical		= 'adto',
+	kIOAudioClockSelectorTypeADAT9Pin			= 'adt9',
+	kIOAudioClockSelectorTypeSMPTE				= 'smpt',
+	kIOAudioClockSelectorTypeVideo				= 'vdeo',
+	kIOAudioClockSelectorTypeControl			= 'cnrl',
+	kIOAudioClockSelectorTypeOther				= 'othr'
 };
 
 enum {
-    kIOAudioStreamByteOrderBigEndian		= 0,
-    kIOAudioStreamByteOrderLittleEndian		= 1
+    kIOAudioStreamAlignmentLowByte					= 0,
+    kIOAudioStreamAlignmentHighByte					= 1
 };
 
 enum {
-    kIOAudioLevelControlNegativeInfinity	= 0xffffffff
+    kIOAudioStreamByteOrderBigEndian				= 0,
+    kIOAudioStreamByteOrderLittleEndian				= 1
+};
+
+enum {
+    kIOAudioLevelControlNegativeInfinity			= 0xffffffff
+};
+
+enum {
+    kIOAudioNewClockDomain							= 0xffffffff
 };
 
 // Device connection types
@@ -387,7 +506,10 @@ enum {
 	EXTERNAL_LEGACY_AUDIO_CONNECTOR					= 0x0604,
 	EXTERNAL_SPDIF_INTERFACE						= 0x0605,
 	EXTERNAL_1394_DA_STREAM							= 0x0606,
-	EXTERNAL_1394_DV_STREAM_SOUNDTRACK				= 0x0607
+	EXTERNAL_1394_DV_STREAM_SOUNDTRACK				= 0x0607,
+	EXTERNAL_ADAT									= 0x0608,
+	EXTERNAL_TDIF									= 0x0609,
+	EXTERNAL_MADI									= 0x060A
 };
 
 // Embedded terminal types

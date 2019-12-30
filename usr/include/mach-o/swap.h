@@ -3,27 +3,27 @@
  *
  * @APPLE_LICENSE_HEADER_START@
  * 
- * Portions Copyright (c) 1999 Apple Computer, Inc.  All Rights
- * Reserved.  This file contains Original Code and/or Modifications of
- * Original Code as defined in and that are subject to the Apple Public
- * Source License Version 1.1 (the "License").  You may not use this file
- * except in compliance with the License.  Please obtain a copy of the
- * License at http://www.apple.com/publicsource and read it before using
- * this file.
+ * This file contains Original Code and/or Modifications of Original Code
+ * as defined in and that are subject to the Apple Public Source License
+ * Version 2.0 (the 'License'). You may not use this file except in
+ * compliance with the License. Please obtain a copy of the License at
+ * http://www.opensource.apple.com/apsl/ and read it before using this
+ * file.
  * 
  * The Original Code and all software distributed under the License are
- * distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY KIND, EITHER
+ * distributed on an 'AS IS' basis, WITHOUT WARRANTY OF ANY KIND, EITHER
  * EXPRESS OR IMPLIED, AND APPLE HEREBY DISCLAIMS ALL SUCH WARRANTIES,
  * INCLUDING WITHOUT LIMITATION, ANY WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE OR NON- INFRINGEMENT.  Please see the
- * License for the specific language governing rights and limitations
- * under the License.
+ * FITNESS FOR A PARTICULAR PURPOSE, QUIET ENJOYMENT OR NON-INFRINGEMENT.
+ * Please see the License for the specific language governing rights and
+ * limitations under the License.
  * 
  * @APPLE_LICENSE_HEADER_END@
  */
 #ifndef _MACH_O_SWAP_H_
 #define _MACH_O_SWAP_H_
 
+#include <stdint.h>
 #include <architecture/byte_order.h>
 #include <mach-o/fat.h>
 #include <mach-o/loader.h>
@@ -37,7 +37,7 @@ extern void swap_fat_header(
 
 extern void swap_fat_arch(
     struct fat_arch *fat_archs,
-    unsigned long nfat_arch,
+    uint32_t nfat_arch,
     enum NXByteOrder target_byte_order);
 
 extern void swap_mach_header(
@@ -54,7 +54,7 @@ extern void swap_segment_command(
 
 extern void swap_section(
     struct section *s,
-    unsigned long nsects,
+    uint32_t nsects,
     enum NXByteOrder target_byte_order);
 
 extern void swap_symtab_command(
@@ -127,42 +127,42 @@ extern void swap_prebind_cksum_command(
 
 extern void swap_twolevel_hint(
     struct twolevel_hint *hints,
-    unsigned long nhints,
+    uint32_t nhints,
     enum NXByteOrder target_byte_sex);
 
 extern void swap_nlist(
     struct nlist *symbols,
-    unsigned long nsymbols,
+    uint32_t nsymbols,
     enum NXByteOrder target_byte_order);
 
 extern void swap_ranlib(
     struct ranlib *ranlibs,
-    unsigned long nranlibs,
+    uint32_t nranlibs,
     enum NXByteOrder target_byte_order);
 
 extern void swap_relocation_info(
     struct relocation_info *relocs,
-    unsigned long nrelocs,
+    uint32_t nrelocs,
     enum NXByteOrder target_byte_order);
 
 extern void swap_indirect_symbols(
-    unsigned long *indirect_symbols,
-    unsigned long nindirect_symbols,
+    uint32_t *indirect_symbols,
+    uint32_t nindirect_symbols,
     enum NXByteOrder target_byte_sex);
 
 extern void swap_dylib_reference(
     struct dylib_reference *refs,  
-    unsigned long nrefs,
+    uint32_t nrefs,
     enum NXByteOrder target_byte_sex);
 
 extern void swap_dylib_module(  
     struct dylib_module *mods,
-    unsigned long nmods, 
+    uint32_t nmods, 
     enum NXByteOrder target_byte_sex);
 
 extern void swap_dylib_table_of_contents(
     struct dylib_table_of_contents *tocs,
-    unsigned long ntocs,
+    uint32_t ntocs,
     enum NXByteOrder target_byte_sex);
 
 #endif /* _MACH_O_SWAP_H_ */

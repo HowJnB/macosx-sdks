@@ -66,7 +66,11 @@
 
 #define kIOAudioDeviceTransportTypeKey		"IOAudioDeviceTransportType"
 
+#define kIOAudioDeviceConfigurationAppKey	"IOAudioDeviceConfigurationApplication"
 
+#define kIOAudioDeviceCanBeDefaults			"IOAudioDeviceCanBeDefaults"
+
+#define kIOAudioDeviceModelIDKey			"IOAudioDeviceModelID"
 
 /*****
  *
@@ -90,6 +94,17 @@
  */
 #define kIOAudioEngineOutputSampleLatencyKey		"IOAudioEngineOutputSampleLatency"
 
+/*!
+ * @defined kIOAudioStreamSampleLatencyKey
+ * @abstract The key in the IORegistry for the IOAudioStream output sample latency key
+ * @discussion Tells the HAL how much latency is on a particular stream.  If two streams
+ * on the same engine have different latencies (e.g. one is analog, one is digital), then
+ * set this property on both streams to inform the HAL of the latency differences.  Alternately,
+ * you can set the engine latency, and just include the latency additional to that for the particular
+ * stream.  The HAL will add the engine and stream latency numbers together to get the total latency.
+ */
+#define kIOAudioStreamSampleLatencyKey				"IOAudioStreamSampleLatency"
+
 #define kIOAudioEngineInputSampleLatencyKey			"IOAudioEngineInputSampleLatency"
 
 #define kIOAudioEngineSampleOffsetKey				"IOAudioEngineSampleOffset"
@@ -105,6 +120,33 @@
 #define kIOAudioEngineGlobalUniqueIDKey				"IOAudioEngineGlobalUniqueID"
 
 #define kIOAudioEngineDescriptionKey				"IOAudioEngineDescription"
+
+#define kIOAudioEngineClockIsStableKey				"IOAudioEngineClockIsStable"
+
+#define kIOAudioEngineClockDomainKey				"IOAudioEngineClockDomain"
+
+/*!
+ * @defined kIOAudioEngineFullChannelNamesKey
+ * @abstract The key in the IORegistry for the IOAudioEngine's dictionary of fully constructed names for each channel keyed by the device channel
+ * @discussion 
+ */
+#define	kIOAudioEngineFullChannelNamesKey			"IOAudioEngineChannelNames"
+
+/*!
+ * @defined kIOAudioEngineFullChannelNamesKey
+ * @abstract The key in the IORegistry for the IOAudioEngine's dictionary of category names for each channel keyed by the device channel
+ * @discussion 
+ */
+#define	kIOAudioEngineFullChannelCategoryNamesKey	"IOAudioEngineChannelCategoryNames"
+
+/*!
+ * @defined kIOAudioEngineFullChannelNamesKey
+ * @abstract The key in the IORegistry for the IOAudioEngine's dictionary of number names for each channel keyed by the device channel
+ * @discussion 
+ */
+#define	kIOAudioEngineFullChannelNumberNamesKey		"IOAudioEngineChannelNumberNames"
+
+#define kIOAudioEngineFlavorKey						"IOAudioEngineFlavor"
 
 /*****
  *
@@ -217,7 +259,7 @@
  */
 #define kIOAudioControlChannelIDKey		"IOAudioControlChannelID"
 
-#define kIOAudioControlChannelNumberKey	"IOAudioControlChannelNumber"
+#define kIOAudioControlChannelNumberKey			"IOAudioControlChannelNumber"
 
 #define kIOAudioControlCoreAudioPropertyIDKey	"IOAudioControlCoreAudioPropertyID"
 /*!
@@ -287,6 +329,14 @@
 #define kIOAudioControlValueKey				"IOAudioControlValue"
 
 /*!
+ * @defined kIOAudioControlValueIsReadOnlyKey
+ * @abstract The key in the IORegistry for the IOAudioControl value-is-read-only attribute.
+ * @discussion The value returned by this key is a 32-bit integer but the value doesn't have any direct meaning.
+ *  Instead, the presence of this key indicates that the value for the control is read-only
+ */
+#define kIOAudioControlValueIsReadOnlyKey	"IOAudioControlValueIsReadOnly"
+
+/*!
  * @defined kIOAudioLevelControlMinValueKey
  * @abstract The key in the IORegistry for the IOAudioControl minimum value attribute.
  * @discussion The value returned by this key is a 32-bit integer representing the minimum value for the IOAudioControl.
@@ -326,8 +376,12 @@
 
 #define kIOAudioLevelControlRangesKey		"IOAudioLevelControlRanges"
 
+#define kIOAudioLevelControlUseLinearScale	"IOAudioLevelControlUseLinearScale"
+
 #define kIOAudioSelectorControlAvailableSelectionsKey	"IOAudioSelectorControlAvailableSelections"
 #define kIOAudioSelectorControlSelectionValueKey		"IOAudioSelectorControlSelectionValue"
 #define kIOAudioSelectorControlSelectionDescriptionKey	"IOAudioSelectorControlSelectionDescriptionKey"
+
+#define kIOAudioSelectorControlClockSourceKey				"IOAudioSelectorControlClockSourceKey"
 
 #endif /* _IOAUDIODEFINES_H */

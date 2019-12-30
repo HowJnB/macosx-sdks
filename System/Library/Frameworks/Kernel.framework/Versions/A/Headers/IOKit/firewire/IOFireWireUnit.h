@@ -104,9 +104,8 @@ public:
      * Standard nub initialization
      */
     virtual bool attach(IOService * provider );
+	virtual void free();
 
-    virtual void free();
-	
     /*
      * Matching language support
      * Match on the following properties of the unit:
@@ -142,6 +141,9 @@ public:
 protected:
 	
 	virtual IOFireWireNubAux * createAuxiliary( void );
+
+public:
+	void setMaxSpeed( IOFWSpeed speed );
 	    
 private:
     OSMetaClassDeclareReservedUnused(IOFireWireUnit, 0);
